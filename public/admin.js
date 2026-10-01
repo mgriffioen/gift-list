@@ -36,6 +36,7 @@
     $('admin-view').classList.remove('hidden');
     await loadItems();
     resetForm();
+    await runPendingImport();
   }
 
   $('login-form').addEventListener('submit', async (e) => {
@@ -91,6 +92,20 @@
 
   FIELDS.forEach((f) => $(f).addEventListener('input', updatePreview));
 
+  // Fill the form with scraped details, only overwriting fields that were found.
+  function applyDetails(details) {
+    const current = formValues();
+    FIELDS.forEach((f) => { if (details[f]) current[f] = details[f]; });
+    fillForm(current);
+    const missing = ['title', 'price', 'image'].filter((f) => !details[f]);
+    setMessage(
+      'item-message',
+      missing.length
+        ? `Got what we could — couldn't find the ${missing.join(', ')}. Fill ${missing.length > 1 ? 'those' : 'it'} in below.`
+        : 'Details filled in. Review them and save.',
+    );
+  }
+
   async function fetchDetails() {
     const url = $('url').value.trim();
     if (!url) return setMessage('item-message', 'Paste a product link first.', 'error');
@@ -99,20 +114,13 @@
     button.textContent = 'Fetching…';
     setMessage('item-message', 'Looking up the product page…');
     try {
-      const details = await api('/api/scrape', { method: 'POST', body: { url } });
-      // Only overwrite fields the scraper actually found.
-      const current = formValues();
-      FIELDS.forEach((f) => { if (details[f]) current[f] = details[f]; });
-      fillForm(current);
-      const missing = ['title', 'price', 'image'].filter((f) => !details[f]);
+      applyDetails(await api('/api/scrape', { method: 'POST', body: { url } }));
+    } catch (err) {
       setMessage(
         'item-message',
-        missing.length
-          ? `Got what we could — couldn't find the ${missing.join(', ')}. Fill ${missing.length > 1 ? 'those' : 'it'} in below.`
-          : 'Details filled in. Review them and save.',
+        `Couldn't read that page: ${err.message} Some stores block this. Try the “Add to gift list” bookmark (below) from the product page, or fill in the details by hand.`,
+        'error',
       );
-    } catch (err) {
-      setMessage('item-message', `Couldn't read that page: ${err.message} You can still fill in the details by hand.`, 'error');
     } finally {
       button.disabled = false;
       button.textContent = 'Fetch details';
@@ -266,6 +274,51 @@
       setMessage('settings-message', err.message, 'error');
     }
   });
+
+  // ---------- "Add to gift list" bookmark ----------
+
+  const bookmarkCode = `javascript:${encodeURIComponent(
+    `(${window.giftListBookmarklet.toString()})(${JSON.stringify(`${location.origin}/admin`)})`,
+  )}`;
+  $('bookmarklet').href = bookmarkCode;
+  $('bookmarklet').addEventListener('click', (e) => {
+    e.preventDefault();
+    setMessage('bookmarklet-message', 'Drag this button to your bookmarks bar rather than clicking it here.');
+  });
+  $('copy-bookmarklet').addEventListener('click', async () => {
+    try {
+      await navigator.clipboard.writeText(bookmarkCode);
+      setMessage('bookmarklet-message', 'Copied. Create a new bookmark and paste this in as its URL/address.');
+    } catch {
+      setMessage('bookmarklet-message', 'Couldn\'t copy automatically. Drag the button to your bookmarks bar instead.', 'error');
+    }
+  });
+
+  // The bookmark opens /admin#import=<{url, html}> — take it out of the address
+  // bar right away, and hold on to it until we're logged in.
+  let pendingImport = null;
+  if (location.hash.startsWith('#import=')) {
+    try {
+      pendingImport = JSON.parse(decodeURIComponent(location.hash.slice('#import='.length)));
+    } catch {
+      pendingImport = null;
+    }
+    history.replaceState(null, '', location.pathname);
+  }
+
+  async function runPendingImport() {
+    if (!pendingImport) return;
+    const { url, html } = pendingImport;
+    pendingImport = null;
+    resetForm();
+    $('url').value = url || '';
+    setMessage('item-message', 'Reading the page you sent…');
+    try {
+      applyDetails(await api('/api/parse', { method: 'POST', body: { url, html } }));
+    } catch (err) {
+      setMessage('item-message', `Couldn't read that page: ${err.message} You can still fill in the details by hand.`, 'error');
+    }
+  }
 
   // ---------- Start ----------
 

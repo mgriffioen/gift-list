@@ -37,7 +37,12 @@ The server downloads the product page and reads, in order of preference:
 3. Microdata (`itemprop="price"`) and a few Amazon-specific elements
 4. The page `<title>` and meta description
 
-Some retailers (Amazon especially) block automated requests or show a captcha page. When that happens the admin page says what it couldn't find, and you can fill in the fields by hand. Thumbnails can be any image URL (right-click the product photo → *Copy image address*) or a picture you upload.
+Some retailers (eBay and Amazon especially) block requests from servers, so "Fetch details" fails with an error such as HTTP 403. For those, use the **Add to gift list** bookmark from the admin page's "Add from any store" section:
+
+1. Drag the button to your browser's bookmarks bar. In Safari, use **Copy bookmark code** and paste it as a bookmark's address instead.
+2. On a product page, click the bookmark. It runs in your own browser, copies the product details from the page you're viewing, and opens the admin page with the form filled in. The server reads them the same way "Fetch details" would.
+
+The bookmark contains your site's address, so add it again if that address changes. When neither method finds everything, the admin page says what's missing so you can fill it in by hand. Thumbnails can be any image URL (right-click the product photo → *Copy image address*) or a picture you upload.
 
 ## Deploying
 
