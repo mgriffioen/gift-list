@@ -44,7 +44,7 @@
 
     const href = safeUrl(item.url);
     if (href) {
-      const link = el('a', 'btn', item.buttonText || 'View item');
+      const link = el('a', 'btn', item.buttonText || 'View this item');
       link.href = href;
       link.target = '_blank';
       link.rel = 'noopener noreferrer';

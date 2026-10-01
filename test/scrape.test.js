@@ -17,7 +17,7 @@ test('reads schema.org Product JSON-LD (inside @graph)', () => {
   assert.equal(p.description, 'A very warm blanket.');
   assert.equal(p.price, '$1,249.50');
   assert.equal(p.image, 'https://shop.example.com/img/throw.jpg');
-  assert.equal(p.buttonText, 'View at Cozy Goods');
+  assert.equal(p.buttonText, undefined); // button text is never scraped
 });
 
 test('falls back to Open Graph and product meta tags', () => {
@@ -29,11 +29,10 @@ test('falls back to Open Graph and product meta tags', () => {
     <meta property="product:price:amount" content="18">
     <meta property="product:price:currency" content="EUR">
   </head></html>`;
-  const p = parseProduct(html, 'https://www.mugshop.co.uk/mug');
+  const p = parseProduct(html, 'https://www.mugshop.example/mug');
   assert.equal(p.title, 'Ceramic Mug');
   assert.equal(p.price, '€18.00');
   assert.equal(p.image, 'https://cdn.example.com/mug.png');
-  assert.equal(p.buttonText, 'View at Mugshop');
 });
 
 test('handles Amazon-style markup', () => {

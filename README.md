@@ -3,7 +3,7 @@
 A simple gift-idea page to share with friends and family, plus a password-protected admin page for adding and editing items.
 
 - **Shared page (`/`)**: a grid of cards, each with a thumbnail, title, description, price and a button that opens the retailer's product page.
-- **Admin page (`/admin`)**: paste a product link and click **Fetch details**. The title, description, price, image and store name are pulled from the page, and you can change any of them before saving. You can also edit, reorder and delete items, upload your own thumbnail, and set the page title and intro message.
+- **Admin page (`/admin`)**: paste a product link and click **Fetch details**. The title, description, price and image are pulled from the page, and you can change any of them before saving. You can also edit, reorder and delete items, upload your own thumbnail, change an item's button text (it says "View this item" unless you change it), and set the page title and intro message.
 
 ## Running it
 
