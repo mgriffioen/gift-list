@@ -2,7 +2,7 @@ const path = require('path');
 const crypto = require('crypto');
 const express = require('express');
 const store = require('./lib/store');
-const { scrapeProduct } = require('./lib/scrape');
+const { scrapeProduct, parseSubmittedPage } = require('./lib/scrape');
 const loginLimiter = require('./lib/login-limiter');
 
 const PORT = process.env.PORT || 3000;
@@ -116,6 +116,10 @@ function validateItem(body, { partial = false } = {}) {
 
 app.post('/api/scrape', requireAdmin, ok(async (req, res) => {
   res.json(await scrapeProduct(req.body?.url));
+}));
+
+app.post('/api/parse', requireAdmin, ok((req, res) => {
+  res.json(parseSubmittedPage(req.body?.url, req.body?.html));
 }));
 
 app.post('/api/items', requireAdmin, ok((req, res) => {

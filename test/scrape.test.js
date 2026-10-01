@@ -1,6 +1,6 @@
 const test = require('node:test');
 const assert = require('node:assert');
-const { parseProduct, formatPrice } = require('../lib/scrape');
+const { parseProduct, parseSubmittedPage, formatPrice } = require('../lib/scrape');
 
 test('reads schema.org Product JSON-LD (inside @graph)', () => {
   const html = `<html><head>
@@ -47,6 +47,25 @@ test('handles Amazon-style markup', () => {
   assert.equal(p.price, '$299.99');
   assert.equal(p.image, 'https://m.media-amazon.com/big.jpg');
   assert.equal(p.description, 'Buy the thing.');
+});
+
+test('handles eBay-style markup', () => {
+  const html = `<html><head><title>Vintage Camera | eBay</title></head><body>
+    <h1 class="x-item-title__mainTitle"><span class="ux-textspans">Vintage Film Camera</span></h1>
+    <div class="x-price-primary"><span class="ux-textspans">US $45.00</span></div>
+    <div class="ux-image-carousel-item"><img src="https://i.ebayimg.com/s-l500.jpg" data-zoom-src="https://i.ebayimg.com/s-l1600.jpg"></div>
+  </body></html>`;
+  const p = parseProduct(html, 'https://www.ebay.com/itm/123');
+  assert.equal(p.title, 'Vintage Film Camera');
+  assert.equal(p.price, 'US $45.00');
+  assert.equal(p.image, 'https://i.ebayimg.com/s-l1600.jpg');
+});
+
+test('parseSubmittedPage validates input and parses the page', () => {
+  const p = parseSubmittedPage('https://shop.example.com/x', '<meta property="og:title" content="Lamp">');
+  assert.equal(p.title, 'Lamp');
+  assert.throws(() => parseSubmittedPage('javascript:alert(1)', '<p>x</p>'), /http/);
+  assert.throws(() => parseSubmittedPage('https://shop.example.com/x', ''), /content/);
 });
 
 test('returns empty strings when nothing is found', () => {

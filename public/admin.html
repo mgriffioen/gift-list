@@ -92,6 +92,25 @@
       </div>
     </section>
 
+    <!-- Bookmark for stores that block Fetch details -->
+    <section class="panel">
+      <h2>Add from any store</h2>
+      <p class="hint" style="margin-top:0">
+        Some stores (like eBay and Amazon) block “Fetch details”. This bookmark works around that:
+        it reads the product page you're already looking at and opens this page with the details filled in.
+      </p>
+      <div id="bookmarklet-message" class="message"></div>
+      <div class="row" style="align-items:center">
+        <a id="bookmarklet" class="btn" href="#">➕ Add to gift list</a>
+        <button id="copy-bookmarklet" class="btn secondary" type="button">Copy bookmark code</button>
+      </div>
+      <ol class="hint" style="margin-bottom:0">
+        <li>Drag the <strong>Add to gift list</strong> button to your browser's bookmarks bar. (If dragging doesn't work, as in Safari, bookmark any page, then edit the bookmark and paste the copied code as its address.)</li>
+        <li>On a product page, click the bookmark. This page opens with the form filled in. Review it and save.</li>
+        <li>If this site's address changes (for example, a new custom domain), add the bookmark again from the new address.</li>
+      </ol>
+    </section>
+
     <!-- Existing items -->
     <section class="panel">
       <h2>Your list (<span id="count">0</span>)</h2>
@@ -118,6 +137,7 @@
   </div>
 
   <script src="/card.js"></script>
+  <script src="/bookmarklet.js"></script>
   <script src="/admin.js"></script>
 </body>
 </html>
