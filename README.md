@@ -7,7 +7,7 @@ A simple gift-idea page to share with friends and family, plus a password-protec
 
 ## Running it
 
-Requires Node.js 18 or newer.
+Requires Node.js 22 (pinned in `package.json` and `.nvmrc`, so hosts like Railway pick the right version).
 
 ```bash
 npm install
