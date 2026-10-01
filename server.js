@@ -3,6 +3,7 @@ const crypto = require('crypto');
 const express = require('express');
 const store = require('./lib/store');
 const { scrapeProduct } = require('./lib/scrape');
+const loginLimiter = require('./lib/login-limiter');
 
 const PORT = process.env.PORT || 3000;
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || '';
@@ -15,6 +16,9 @@ if (!ADMIN_PASSWORD) {
 
 const app = express();
 app.disable('x-powered-by');
+// Hosts like Railway and Render sit behind one proxy hop; trusting it makes
+// req.ip the visitor's real address (used to limit login attempts).
+app.set('trust proxy', Number(process.env.TRUST_PROXY_HOPS ?? 1));
 app.use(express.json({ limit: '12mb' })); // room for an uploaded image
 
 // ---------- Admin auth (one shared password, signed cookie) ----------
@@ -46,13 +50,27 @@ function requireAdmin(req, res, next) {
   res.status(401).json({ error: 'Please log in.' });
 }
 
+function tooManyAttempts(res, waitMs) {
+  const minutes = Math.ceil(waitMs / 60000);
+  res.set('Retry-After', String(Math.ceil(waitMs / 1000)));
+  res.status(429).json({
+    error: `Too many wrong passwords. Try again in ${minutes} minute${minutes === 1 ? '' : 's'}.`,
+  });
+}
+
 app.post('/api/login', (req, res) => {
   if (!ADMIN_PASSWORD) {
     return res.status(503).json({ error: 'Set the ADMIN_PASSWORD environment variable and restart the server.' });
   }
+  const waitMs = loginLimiter.lockedFor(req.ip);
+  if (waitMs) return tooManyAttempts(res, waitMs);
   if (!safeEqual(req.body?.password ?? '', ADMIN_PASSWORD)) {
-    return res.status(401).json({ error: 'Wrong password.' });
+    const { remaining, lockedFor } = loginLimiter.recordFailure(req.ip);
+    if (lockedFor) return tooManyAttempts(res, lockedFor);
+    const warning = remaining <= 2 ? ` ${remaining} ${remaining === 1 ? 'try' : 'tries'} left before a 15-minute lockout.` : '';
+    return res.status(401).json({ error: `Wrong password.${warning}` });
   }
+  loginLimiter.recordSuccess(req.ip);
   res.cookie(COOKIE_NAME, sessionToken(), {
     httpOnly: true,
     sameSite: 'strict',

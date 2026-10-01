@@ -21,6 +21,8 @@ Then open http://localhost:3000 (shared page) and http://localhost:3000/admin (a
 | `ADMIN_PASSWORD` | Password for `/admin`. **Required:** with no password set, every admin login is refused. | none |
 | `PORT` | Port to listen on. | `3000` |
 | `DATA_DIR` | Where items, settings and uploaded images are stored. | `./data` |
+| `LOGIN_MAX_FAILURES` | Wrong passwords allowed from one IP address (within 15 minutes) before it's locked out of the admin login for 15 minutes. | `5` |
+| `TRUST_PROXY_HOPS` | How many proxies sit in front of the app, used to find each visitor's real IP address. Railway and Render use one. Set it to `0` if the app is exposed directly to the internet with no proxy. | `1` |
 
 ## How data is stored
 
