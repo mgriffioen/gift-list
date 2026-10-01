@@ -7,6 +7,9 @@
   --accent: #b5442f;
   --accent-hover: #963624;
   --accent-text: #ffffff;
+  --btn-from: #4cb86b; /* green */
+  --btn-to: #f5d547;   /* yellow */
+  --btn-text: #1c2a1e; /* dark green: at least 6:1 contrast across the fade */
   --danger: #b3261e;
   --shadow: 0 1px 2px rgba(43, 39, 35, 0.06), 0 4px 16px rgba(43, 39, 35, 0.06);
   --radius: 14px;
@@ -93,19 +96,21 @@ header.site p { margin: 0 auto; max-width: 60ch; color: var(--muted); white-spac
   gap: 6px;
   padding: 10px 16px;
   border: 1px solid transparent;
-  border-radius: 10px;
-  background: var(--accent);
-  color: var(--accent-text);
+  /* Rounded top-left and bottom-right corners; square top-right and bottom-left. */
+  border-radius: 14px 0;
+  background: linear-gradient(90deg, var(--btn-from), var(--btn-to)) border-box; /* also under the border, so the fade doesn't wrap */
+  color: var(--btn-text);
   font: inherit;
   font-weight: 600;
   text-decoration: none;
   cursor: pointer;
 }
-.btn:hover { background: var(--accent-hover); }
+.btn:hover { filter: brightness(1.06) saturate(1.1); }
 .btn:disabled { opacity: 0.6; cursor: progress; }
 .btn.secondary { background: transparent; color: var(--text); border-color: var(--border); }
-.btn.secondary:hover { background: var(--bg); }
+.btn.secondary:hover { background: var(--bg); filter: none; }
 .btn.danger { background: transparent; color: var(--danger); border-color: var(--border); }
+.btn.danger:hover { filter: none; }
 .btn.small { padding: 6px 10px; font-size: 0.85rem; }
 
 .empty { text-align: center; color: var(--muted); padding: 48px 0; }

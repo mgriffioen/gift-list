@@ -1,3 +1,4 @@
+const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 const express = require('express');
@@ -151,9 +152,35 @@ app.put('/api/settings', requireAdmin, ok((req, res) => {
 
 // ---------- Pages & static files ----------
 
+const PUBLIC_DIR = path.join(__dirname, 'public');
+
+// Fingerprint of the public files, added to each page's script and stylesheet
+// links. A deploy that changes them changes the links, so browsers and CDNs
+// can't pair a new page with old cached scripts. (Cloudflare tells browsers to
+// cache scripts for hours by default, regardless of the server's headers.)
+const ASSET_VERSION = (() => {
+  const hash = crypto.createHash('sha256');
+  for (const name of fs.readdirSync(PUBLIC_DIR).sort()) {
+    const file = path.join(PUBLIC_DIR, name);
+    if (fs.statSync(file).isFile()) hash.update(name).update(fs.readFileSync(file));
+  }
+  return hash.digest('hex').slice(0, 12);
+})();
+
+function servePage(name) {
+  const html = fs
+    .readFileSync(path.join(PUBLIC_DIR, name), 'utf8')
+    .replace(/(src|href)="\/([\w-]+\.(?:js|css))"/g, `$1="/$2?v=${ASSET_VERSION}"`);
+  return (req, res) => {
+    res.set('Cache-Control', 'no-cache'); // always check for a newer page
+    res.type('html').send(html);
+  };
+}
+
 app.use('/uploads', express.static(store.UPLOADS_DIR, { maxAge: '30d', immutable: true }));
-app.get('/admin', (req, res) => res.sendFile(path.join(__dirname, 'public', 'admin.html')));
-app.use(express.static(path.join(__dirname, 'public')));
+app.get(['/', '/index.html'], servePage('index.html'));
+app.get(['/admin', '/admin.html'], servePage('admin.html'));
+app.use(express.static(PUBLIC_DIR, { index: false }));
 
 app.listen(PORT, () => {
   console.log(`Gift list running at http://localhost:${PORT}  (admin: http://localhost:${PORT}/admin)`);
