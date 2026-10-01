@@ -72,7 +72,7 @@
 
   function resetForm() {
     editingId = null;
-    fillForm({ buttonText: 'View item' });
+    fillForm({ buttonText: 'View this item' });
     $('editor-heading').textContent = 'Add a gift';
     $('save').textContent = 'Add to list';
     $('cancel').textContent = 'Clear';
