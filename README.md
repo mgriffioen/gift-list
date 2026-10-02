@@ -1,4 +1,4 @@
-# 🎁 Gift List
+# Gift List
 
 A simple gift-idea page to share with friends and family, plus a password-protected admin page for adding and editing items.
 
