@@ -21,8 +21,18 @@
 
   window.renderCard = function renderCard(item) {
     const card = el('article', 'card');
+    const href = safeUrl(item.url);
 
-    const thumb = el('div', 'thumb');
+    // The image links to the item too; it's hidden from keyboard/screen readers
+    // since the button below already offers the same link.
+    const thumb = el(href ? 'a' : 'div', 'thumb');
+    if (href) {
+      thumb.href = href;
+      thumb.target = '_blank';
+      thumb.rel = 'noopener noreferrer';
+      thumb.tabIndex = -1;
+      thumb.setAttribute('aria-hidden', 'true');
+    }
     const src = safeUrl(item.image, { allowRelative: true });
     if (src) {
       const img = el('img');
@@ -42,7 +52,6 @@
     if (item.description) body.append(el('p', 'desc', item.description));
     if (item.price) body.append(el('div', 'price', item.price));
 
-    const href = safeUrl(item.url);
     if (href) {
       const link = el('a', 'btn', item.buttonText || 'View this item');
       link.href = href;

@@ -73,6 +73,7 @@ header.site p { margin: 0 auto; max-width: 60ch; color: var(--muted); white-spac
   justify-content: center;
   border-bottom: 1px solid var(--border);
 }
+a.thumb { cursor: pointer; }
 .card .thumb img { width: 100%; height: 100%; object-fit: contain; padding: 12px; }
 .card .thumb .placeholder { font-size: 3rem; opacity: 0.4; }
 
