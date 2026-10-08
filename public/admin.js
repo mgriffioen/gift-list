@@ -199,6 +199,7 @@
 
     items.forEach((item, index) => {
       const li = document.createElement('li');
+      li.classList.toggle('is-hidden', Boolean(item.hidden));
 
       let thumb;
       if (item.image) {
@@ -219,6 +220,12 @@
       meta.textContent = [item.price, item.url && new URL(item.url).hostname.replace(/^www\./, '')]
         .filter(Boolean).join(' · ');
       info.append(title, meta);
+      if (item.hidden) {
+        const badge = document.createElement('span');
+        badge.className = 'badge';
+        badge.textContent = 'Hidden from the shared page';
+        info.append(badge);
+      }
 
       const controls = document.createElement('div');
       controls.className = 'controls';
@@ -232,6 +239,7 @@
         up,
         down,
         button('Edit', 'secondary', () => startEdit(item)),
+        button(item.hidden ? 'Show' : 'Hide', 'secondary', () => setHidden(item, !item.hidden)),
         button('Delete', 'danger', () => remove(item)),
       );
 
@@ -241,7 +249,7 @@
   }
 
   async function loadItems() {
-    const data = await api('/api/items');
+    const data = await api('/api/items?all=1');
     items = data.items;
     $('site-title').value = data.settings.title;
     $('site-intro').value = data.settings.intro;
@@ -251,6 +259,11 @@
   async function move(item, direction) {
     items = await api(`/api/items/${item.id}/move`, { method: 'POST', body: { direction } });
     renderList();
+  }
+
+  async function setHidden(item, hidden) {
+    await api(`/api/items/${item.id}`, { method: 'PUT', body: { hidden } });
+    await loadItems();
   }
 
   async function remove(item) {

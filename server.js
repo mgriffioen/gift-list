@@ -90,8 +90,11 @@ app.get('/api/session', (req, res) => res.json({ admin: isAdmin(req) }));
 
 // ---------- Public API ----------
 
+// Hidden items are left out, except for the admin page (?all=1 while logged in).
 app.get('/api/items', (req, res) => {
-  res.json({ settings: store.getSettings(), items: store.listItems() });
+  const all = req.query.all === '1' && isAdmin(req);
+  const items = store.listItems().filter((item) => all || !item.hidden);
+  res.json({ settings: store.getSettings(), items });
 });
 
 // ---------- Admin API ----------
