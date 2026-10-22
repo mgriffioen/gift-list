@@ -1,9 +1,13 @@
 (function () {
   const $ = (id) => document.getElementById(id);
-  const FIELDS = ['url', 'title', 'description', 'price', 'image', 'buttonText'];
+  const FIELDS = ['url', 'title', 'description', 'price', 'image', 'buttonText', 'category'];
+  const { CATEGORIES, guessCategory } = window.giftCategories;
 
   let items = [];
   let editingId = null;
+  // Until the section is picked by hand (or the item was already saved with
+  // one), it follows a guess from the title, description and link.
+  let categoryChosen = false;
 
   async function api(path, { method = 'GET', body } = {}) {
     const res = await fetch(path, {
@@ -64,8 +68,32 @@
 
   function fillForm(values) {
     FIELDS.forEach((f) => { $(f).value = values[f] ?? ''; });
+    if (!$('category').value) $('category').value = 'other';
+    autoCategory();
     updatePreview();
   }
+
+  function categoryOptions(select) {
+    select.replaceChildren(...CATEGORIES.map(({ id, label }) => new Option(label, id)));
+    return select;
+  }
+  categoryOptions($('category'));
+
+  function autoCategory() {
+    if (categoryChosen) return;
+    const values = formValues();
+    const guess = guessCategory(values);
+    $('category').value = guess;
+    $('category-hint').textContent = values.title || values.description || values.url
+      ? 'Guessed from the details above. Change it if that’s wrong.'
+      : 'Filled in automatically once you add a title or link.';
+  }
+
+  $('category').addEventListener('change', () => {
+    categoryChosen = true;
+    $('category-hint').textContent = '';
+  });
+  ['url', 'title', 'description'].forEach((f) => $(f).addEventListener('input', autoCategory));
 
   function updatePreview() {
     $('preview').replaceChildren(renderCard(formValues()));
@@ -73,6 +101,7 @@
 
   function resetForm() {
     editingId = null;
+    categoryChosen = false;
     fillForm({ buttonText: 'View this item' });
     $('editor-heading').textContent = 'Add a gift';
     $('save').textContent = 'Add to list';
@@ -82,6 +111,8 @@
 
   function startEdit(item) {
     editingId = item.id;
+    categoryChosen = true;
+    $('category-hint').textContent = '';
     fillForm(item);
     $('editor-heading').textContent = 'Edit gift';
     $('save').textContent = 'Save changes';
@@ -95,7 +126,7 @@
   // Fill the form with scraped details, only overwriting fields that were found.
   function applyDetails(details) {
     const current = formValues();
-    FIELDS.forEach((f) => { if (details[f]) current[f] = details[f]; });
+    FIELDS.forEach((f) => { if (details[f] && f !== 'category') current[f] = details[f]; });
     fillForm(current);
     const missing = ['title', 'price', 'image'].filter((f) => !details[f]);
     setMessage(
@@ -192,60 +223,79 @@
   }
 
   function renderList() {
-    const list = $('items');
-    list.replaceChildren();
+    const container = $('items');
+    container.replaceChildren();
     $('count').textContent = items.length;
     $('no-items').classList.toggle('hidden', items.length > 0);
 
-    items.forEach((item, index) => {
-      const li = document.createElement('li');
-      li.classList.toggle('is-hidden', Boolean(item.hidden));
+    for (const { id, label } of CATEGORIES) {
+      const inSection = items.filter((item) => item.category === id);
+      if (!inSection.length) continue;
+      const heading = document.createElement('h3');
+      heading.className = 'list-section';
+      heading.textContent = `${label} (${inSection.length})`;
+      const list = document.createElement('ul');
+      list.className = 'item-list';
+      inSection.forEach((item, index) => list.append(renderListItem(item, index, inSection.length)));
+      container.append(heading, list);
+    }
+  }
 
-      let thumb;
-      if (item.image) {
-        thumb = document.createElement('img');
-        thumb.src = item.image;
-        thumb.alt = '';
-        thumb.referrerPolicy = 'no-referrer';
-      } else {
-        thumb = document.createElement('div');
-        thumb.className = 'noimg';
-      }
+  function renderListItem(item, index, sectionSize) {
+    const li = document.createElement('li');
+    li.classList.toggle('is-hidden', Boolean(item.hidden));
 
-      const info = document.createElement('div');
-      info.className = 'info';
-      const title = document.createElement('strong');
-      title.textContent = item.title;
-      const meta = document.createElement('span');
-      meta.textContent = [item.price, item.url && new URL(item.url).hostname.replace(/^www\./, '')]
-        .filter(Boolean).join(' · ');
-      info.append(title, meta);
-      if (item.hidden) {
-        const badge = document.createElement('span');
-        badge.className = 'badge';
-        badge.textContent = 'Hidden from the shared page';
-        info.append(badge);
-      }
+    let thumb;
+    if (item.image) {
+      thumb = document.createElement('img');
+      thumb.src = item.image;
+      thumb.alt = '';
+      thumb.referrerPolicy = 'no-referrer';
+    } else {
+      thumb = document.createElement('div');
+      thumb.className = 'noimg';
+    }
 
-      const controls = document.createElement('div');
-      controls.className = 'controls';
-      const up = button('↑', 'secondary', () => move(item, 'up'));
-      const down = button('↓', 'secondary', () => move(item, 'down'));
-      up.disabled = index === 0;
-      down.disabled = index === items.length - 1;
-      up.title = 'Move up';
-      down.title = 'Move down';
-      controls.append(
-        up,
-        down,
-        button('Edit', 'secondary', () => startEdit(item)),
-        button(item.hidden ? 'Show' : 'Hide', 'secondary', () => setHidden(item, !item.hidden)),
-        button('Delete', 'danger', () => remove(item)),
-      );
+    const info = document.createElement('div');
+    info.className = 'info';
+    const title = document.createElement('strong');
+    title.textContent = item.title;
+    const meta = document.createElement('span');
+    meta.textContent = [item.price, item.url && new URL(item.url).hostname.replace(/^www\./, '')]
+      .filter(Boolean).join(' · ');
+    info.append(title, meta);
+    if (item.hidden) {
+      const badge = document.createElement('span');
+      badge.className = 'badge';
+      badge.textContent = 'Hidden from the shared page';
+      info.append(badge);
+    }
 
-      li.append(thumb, info, controls);
-      list.append(li);
-    });
+    const section = categoryOptions(document.createElement('select'));
+    section.value = item.category;
+    section.title = 'Section';
+    section.setAttribute('aria-label', `Section for ${item.title}`);
+    section.addEventListener('change', () => setCategory(item, section.value));
+
+    const controls = document.createElement('div');
+    controls.className = 'controls';
+    const up = button('↑', 'secondary', () => move(item, 'up'));
+    const down = button('↓', 'secondary', () => move(item, 'down'));
+    up.disabled = index === 0;
+    down.disabled = index === sectionSize - 1;
+    up.title = 'Move up';
+    down.title = 'Move down';
+    controls.append(
+      section,
+      up,
+      down,
+      button('Edit', 'secondary', () => startEdit(item)),
+      button(item.hidden ? 'Show' : 'Hide', 'secondary', () => setHidden(item, !item.hidden)),
+      button('Delete', 'danger', () => remove(item)),
+    );
+
+    li.append(thumb, info, controls);
+    return li;
   }
 
   async function loadItems() {
@@ -259,6 +309,12 @@
   async function move(item, direction) {
     items = await api(`/api/items/${item.id}/move`, { method: 'POST', body: { direction } });
     renderList();
+  }
+
+  async function setCategory(item, category) {
+    await api(`/api/items/${item.id}`, { method: 'PUT', body: { category } });
+    if (editingId === item.id) $('category').value = category;
+    await loadItems();
   }
 
   async function setHidden(item, hidden) {

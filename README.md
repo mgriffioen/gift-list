@@ -2,8 +2,9 @@
 
 A simple gift-idea page to share with friends and family, plus a password-protected admin page for adding and editing items.
 
-- **Shared page (`/`)**: a grid of cards, each with a thumbnail, title, description, price and a button that opens the retailer's product page.
+- **Shared page (`/`)**: cards grouped into sections (Decks, Tech, Games and Other; empty sections aren't shown), each with a thumbnail, title, description, price and a button that opens the retailer's product page.
 - **Admin page (`/admin`)**: paste a product link and click **Fetch details**. The title, description, price and image are pulled from the page, and you can change any of them before saving. You can also edit, reorder, hide and delete items (a hidden item stays in your admin list but isn't shown on the shared page, so you can bring it back with **Show**), upload your own thumbnail, change an item's button text (it says "View this item" unless you change it), and set the page title and intro message.
+- **Sections**: when you add a gift, the admin page guesses its section from the title, description and store link (for example, "playing cards" or theory11.com → Decks, "board game" → Games, "headphones" → Tech). Change it in the **Section** dropdown before saving. Once you pick one yourself, it stops guessing. Each item in the admin list also has a section dropdown, and the ↑/↓ buttons move items within their section. Items added before sections existed get a guessed section until you change it.
 
 ## Running it
 
@@ -54,4 +55,4 @@ Any host that runs Node.js and has **a persistent disk** will work, because the 
 npm test
 ```
 
-Runs the scraper tests against sample retailer-style HTML.
+Runs the scraper tests against sample retailer-style HTML, plus tests for the section guesses.

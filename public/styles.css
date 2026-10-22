@@ -49,6 +49,14 @@ header.site p { margin: 0 auto; max-width: 60ch; color: var(--muted); white-spac
 
 /* ---------- Gift cards ---------- */
 
+.gift-section + .gift-section { margin-top: 40px; }
+.gift-section > h2 {
+  margin: 0 0 16px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border);
+  font-size: 1.35rem;
+}
+
 .grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
@@ -145,7 +153,7 @@ a.thumb { cursor: pointer; }
 form .field { display: flex; flex-direction: column; gap: 4px; margin-bottom: 14px; }
 form label { font-weight: 600; font-size: 0.9rem; }
 form .hint { color: var(--muted); font-size: 0.82rem; }
-input[type="text"], input[type="url"], input[type="password"], textarea {
+input[type="text"], input[type="url"], input[type="password"], textarea, select {
   width: 100%;
   padding: 10px 12px;
   border: 1px solid var(--border);
@@ -155,7 +163,7 @@ input[type="text"], input[type="url"], input[type="password"], textarea {
   font: inherit;
 }
 textarea { min-height: 100px; resize: vertical; }
-input:focus, textarea:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+input:focus, textarea:focus, select:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
 
 .row { display: flex; gap: 8px; align-items: stretch; flex-wrap: wrap; }
 .row > input { flex: 1; min-width: 200px; }
@@ -169,7 +177,10 @@ input:focus, textarea:focus { outline: 2px solid var(--accent); outline-offset: 
 .message.info { background: color-mix(in srgb, var(--accent) 12%, transparent); }
 .message:empty { display: none; }
 
+h3.list-section { margin: 20px 0 4px; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); }
+h3.list-section:first-of-type { margin-top: 0; }
 .item-list { list-style: none; margin: 0; padding: 0; }
+.item-list select { width: auto; padding: 5px 8px; font-size: 0.85rem; }
 .item-list li {
   display: flex;
   align-items: center;
