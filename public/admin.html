@@ -70,6 +70,12 @@
           </div>
 
           <div class="field">
+            <label for="category">Section</label>
+            <select id="category"></select>
+            <span id="category-hint" class="hint"></span>
+          </div>
+
+          <div class="field">
             <label for="image">Thumbnail image</label>
             <div class="row">
               <input id="image" type="text" placeholder="https://… image link">
@@ -114,7 +120,7 @@
     <!-- Existing items -->
     <section class="panel">
       <h2>Your list (<span id="count">0</span>)</h2>
-      <ul id="items" class="item-list"></ul>
+      <div id="items"></div>
       <p id="no-items" class="empty hidden">No gifts yet. Add your first one above.</p>
     </section>
 
@@ -137,6 +143,7 @@
   </div>
 
   <script src="/card.js"></script>
+  <script src="/categories.js"></script>
   <script src="/bookmarklet.js"></script>
   <script src="/admin.js"></script>
 </body>

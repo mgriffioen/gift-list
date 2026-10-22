@@ -13,24 +13,38 @@
       <h1 id="title">Gift List</h1>
       <p id="intro"></p>
     </header>
-    <main id="grid" class="grid" aria-live="polite"></main>
+    <main id="sections" aria-live="polite"></main>
     <p id="empty" class="empty hidden">Nothing here yet — check back soon!</p>
   </div>
 
   <script src="/card.js"></script>
+  <script src="/categories.js"></script>
   <script>
     (async function () {
-      const grid = document.getElementById('grid');
+      const main = document.getElementById('sections');
       try {
         const res = await fetch('/api/items');
         const { settings, items } = await res.json();
         document.getElementById('title').textContent = settings.title;
         document.getElementById('intro').textContent = settings.intro;
         document.title = settings.title;
-        items.forEach((item) => grid.append(renderCard(item)));
+        // One section per category, in a fixed order; empty ones are skipped.
+        for (const { id, label } of giftCategories.CATEGORIES) {
+          const inSection = items.filter((item) => giftCategories.categoryOf(item) === id);
+          if (!inSection.length) continue;
+          const section = document.createElement('section');
+          section.className = 'gift-section';
+          const heading = document.createElement('h2');
+          heading.textContent = label;
+          const grid = document.createElement('div');
+          grid.className = 'grid';
+          inSection.forEach((item) => grid.append(renderCard(item)));
+          section.append(heading, grid);
+          main.append(section);
+        }
         document.getElementById('empty').classList.toggle('hidden', items.length > 0);
       } catch {
-        grid.textContent = 'Sorry, the list could not be loaded. Please try again later.';
+        main.textContent = 'Sorry, the list could not be loaded. Please try again later.';
       }
     })();
   </script>
