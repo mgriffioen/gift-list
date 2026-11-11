@@ -1,9 +1,12 @@
 (function () {
   const $ = (id) => document.getElementById(id);
   const FIELDS = ['url', 'title', 'description', 'price', 'image', 'buttonText', 'category'];
-  const { CATEGORIES, guessCategory } = window.giftCategories;
+  const { guessCategory } = window.giftCategories;
 
+  let me = null; // { username, siteAdmin }
+  let signupCodeRequired = false;
   let items = [];
+  let categories = []; // this list's own sections, in order
   let editingId = null;
   // Until the section is picked by hand (or the item was already saved with
   // one), it follows a guess from the title, description and link.
@@ -16,7 +19,7 @@
       body: body ? JSON.stringify(body) : undefined,
     });
     const data = await res.json().catch(() => ({}));
-    if (res.status === 401 && path !== '/api/login') showLogin();
+    if (res.status === 401 && !['/api/login', '/api/signup'].includes(path)) showLogin();
     if (!res.ok) throw new Error(data.error || `Request failed (${res.status})`);
     return data;
   }
@@ -29,35 +32,107 @@
 
   // ---------- Views ----------
 
-  function showLogin() {
-    $('admin-view').classList.add('hidden');
-    $('login-view').classList.remove('hidden');
-    $('password').focus();
+  const VIEWS = ['login-view', 'signup-view', 'admin-view'];
+  function showView(id) {
+    VIEWS.forEach((view) => $(view).classList.toggle('hidden', view !== id));
   }
 
-  async function showAdmin() {
-    $('login-view').classList.add('hidden');
-    $('admin-view').classList.remove('hidden');
+  function showLogin() {
+    me = null;
+    showView('login-view');
+    document.title = 'Log in · Gift List';
+    if (location.pathname !== '/login' && location.pathname !== '/admin') history.replaceState(null, '', '/login');
+    $('login-username').focus();
+  }
+
+  function showSignup() {
+    showView('signup-view');
+    document.title = 'Create your gift list';
+    if (location.pathname !== '/signup') history.replaceState(null, '', '/signup');
+    $('signup-code-field').classList.toggle('hidden', !signupCodeRequired);
+    $('signup-code').required = signupCodeRequired;
+    updateSignupAddress();
+    $('signup-username').focus();
+  }
+
+  async function showAdmin(user) {
+    me = user;
+    showView('admin-view');
+    if (location.pathname !== '/admin') history.replaceState(null, '', '/admin');
+    const shareUrl = `${location.origin}/${me.username}`;
+    document.title = `${me.username} · Gift List`;
+    $('admin-heading').textContent = `${me.username}'s gift list`;
+    $('view-list').href = `/${me.username}`;
+    $('share-url').value = shareUrl;
+    $('password-username').value = me.username;
+    $('site-admin').classList.toggle('hidden', !me.siteAdmin);
     await loadItems();
     resetForm();
+    if (me.siteAdmin) loadAccounts();
     await runPendingImport();
   }
+
+  document.querySelectorAll('[data-view]').forEach((link) => {
+    link.addEventListener('click', (e) => {
+      e.preventDefault();
+      if (link.dataset.view === 'signup') showSignup();
+      else showLogin();
+    });
+  });
+
+  function updateSignupAddress() {
+    const name = $('signup-username').value.trim().toLowerCase() || 'yourname';
+    $('signup-address').textContent = `${location.host}/${name}`;
+  }
+  $('signup-username').addEventListener('input', updateSignupAddress);
 
   $('login-form').addEventListener('submit', async (e) => {
     e.preventDefault();
     try {
-      await api('/api/login', { method: 'POST', body: { password: $('password').value } });
-      $('password').value = '';
+      await api('/api/login', {
+        method: 'POST',
+        body: { username: $('login-username').value, password: $('login-password').value },
+      });
+      $('login-password').value = '';
       setMessage('login-message', '', 'error');
-      showAdmin();
+      start();
     } catch (err) {
       setMessage('login-message', err.message, 'error');
+    }
+  });
+
+  $('signup-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    try {
+      await api('/api/signup', {
+        method: 'POST',
+        body: {
+          username: $('signup-username').value,
+          password: $('signup-password').value,
+          code: $('signup-code').value,
+        },
+      });
+      $('signup-password').value = '';
+      setMessage('signup-message', '', 'error');
+      start();
+    } catch (err) {
+      setMessage('signup-message', err.message, 'error');
     }
   });
 
   $('logout').addEventListener('click', async () => {
     await api('/api/logout', { method: 'POST' });
     showLogin();
+  });
+
+  $('copy-share').addEventListener('click', async () => {
+    try {
+      await navigator.clipboard.writeText($('share-url').value);
+      setMessage('share-message', 'Link copied. Paste it into a text or email.');
+    } catch {
+      $('share-url').select();
+      setMessage('share-message', 'Couldn’t copy automatically. The link is selected, so copy it from there.', 'error');
+    }
   });
 
   // ---------- Item form ----------
@@ -68,25 +143,33 @@
 
   function fillForm(values) {
     FIELDS.forEach((f) => { $(f).value = values[f] ?? ''; });
-    if (!$('category').value) $('category').value = 'other';
     autoCategory();
     updatePreview();
   }
 
   function categoryOptions(select) {
-    select.replaceChildren(...CATEGORIES.map(({ id, label }) => new Option(label, id)));
+    select.replaceChildren(
+      new Option('No section', ''),
+      ...categories.map(({ id, label }) => new Option(label, id)),
+    );
     return select;
   }
-  categoryOptions($('category'));
 
   function autoCategory() {
     if (categoryChosen) return;
+    if (!categories.length) {
+      $('category').value = '';
+      $('category-hint').textContent = 'Add sections below to group your gifts.';
+      return;
+    }
     const values = formValues();
-    const guess = guessCategory(values);
+    const guess = guessCategory(values, categories);
     $('category').value = guess;
-    $('category-hint').textContent = values.title || values.description || values.url
-      ? 'Guessed from the details above. Change it if that’s wrong.'
-      : 'Filled in automatically once you add a title or link.';
+    $('category-hint').textContent = !(values.title || values.description || values.url)
+      ? 'Filled in automatically once you add a title or link.'
+      : guess
+        ? 'Guessed from the details above. Change it if that’s wrong.'
+        : 'No section matched. Pick one if you like.';
   }
 
   $('category').addEventListener('change', () => {
@@ -149,7 +232,7 @@
     } catch (err) {
       setMessage(
         'item-message',
-        `Couldn't read that page: ${err.message} Some stores block this. Try the “Add to gift list” bookmark (below) from the product page, or fill in the details by hand.`,
+        `Couldn't read that page: ${err.message} Some stores block this. Try the “Add to gift list” bookmark (further down) from the product page, or fill in the details by hand.`,
         'error',
       );
     } finally {
@@ -177,7 +260,7 @@
         reader.onerror = () => reject(new Error('Could not read the file.'));
         reader.readAsDataURL(file);
       });
-      const { image } = await api('/api/upload', { method: 'POST', body: { dataUrl } });
+      const { image } = await api('/api/me/upload', { method: 'POST', body: { dataUrl } });
       $('image').value = image;
       updatePreview();
       setMessage('item-message', 'Image uploaded. Remember to save.');
@@ -194,9 +277,9 @@
     save.disabled = true;
     try {
       if (editingId) {
-        await api(`/api/items/${editingId}`, { method: 'PUT', body: values });
+        await api(`/api/me/items/${editingId}`, { method: 'PUT', body: values });
       } else {
-        await api('/api/items', { method: 'POST', body: values });
+        await api('/api/me/items', { method: 'POST', body: values });
       }
       const wasEditing = Boolean(editingId);
       await loadItems();
@@ -228,7 +311,8 @@
     $('count').textContent = items.length;
     $('no-items').classList.toggle('hidden', items.length > 0);
 
-    for (const { id, label } of CATEGORIES) {
+    const groups = [...categories, { id: '', label: categories.length ? 'No section' : '' }];
+    for (const { id, label } of groups) {
       const inSection = items.filter((item) => item.category === id);
       if (!inSection.length) continue;
       const heading = document.createElement('h3');
@@ -237,7 +321,8 @@
       const list = document.createElement('ul');
       list.className = 'item-list';
       inSection.forEach((item, index) => list.append(renderListItem(item, index, inSection.length)));
-      container.append(heading, list);
+      if (label) container.append(heading);
+      container.append(list);
     }
   }
 
@@ -261,8 +346,13 @@
     const title = document.createElement('strong');
     title.textContent = item.title;
     const meta = document.createElement('span');
-    meta.textContent = [item.price, item.url && new URL(item.url).hostname.replace(/^www\./, '')]
-      .filter(Boolean).join(' · ');
+    let host = '';
+    try {
+      host = item.url ? new URL(item.url).hostname.replace(/^www\./, '') : '';
+    } catch {
+      host = '';
+    }
+    meta.textContent = [item.price, host].filter(Boolean).join(' · ');
     info.append(title, meta);
     if (item.hidden) {
       const badge = document.createElement('span');
@@ -299,42 +389,114 @@
   }
 
   async function loadItems() {
-    const data = await api('/api/items?all=1');
+    const data = await api('/api/me/list');
     items = data.items;
+    categories = data.categories;
+    const chosen = $('category').value;
+    categoryOptions($('category'));
+    $('category').value = categories.some((c) => c.id === chosen) ? chosen : '';
     $('site-title').value = data.settings.title;
     $('site-intro').value = data.settings.intro;
     renderList();
+    renderCategories();
   }
 
   async function move(item, direction) {
-    items = await api(`/api/items/${item.id}/move`, { method: 'POST', body: { direction } });
+    items = await api(`/api/me/items/${item.id}/move`, { method: 'POST', body: { direction } });
     renderList();
   }
 
   async function setCategory(item, category) {
-    await api(`/api/items/${item.id}`, { method: 'PUT', body: { category } });
+    await api(`/api/me/items/${item.id}`, { method: 'PUT', body: { category } });
     if (editingId === item.id) $('category').value = category;
     await loadItems();
   }
 
   async function setHidden(item, hidden) {
-    await api(`/api/items/${item.id}`, { method: 'PUT', body: { hidden } });
+    await api(`/api/me/items/${item.id}`, { method: 'PUT', body: { hidden } });
     await loadItems();
   }
 
   async function remove(item) {
     if (!confirm(`Delete “${item.title}”?`)) return;
-    await api(`/api/items/${item.id}`, { method: 'DELETE' });
+    await api(`/api/me/items/${item.id}`, { method: 'DELETE' });
     if (editingId === item.id) resetForm();
     await loadItems();
   }
+
+  // ---------- Sections ----------
+
+  async function saveCategories(next, message) {
+    try {
+      categories = await api('/api/me/categories', { method: 'PUT', body: { categories: next } });
+      await loadItems();
+      setMessage('categories-message', message);
+    } catch (err) {
+      setMessage('categories-message', err.message, 'error');
+      renderCategories();
+    }
+  }
+
+  function renderCategories() {
+    const list = $('category-list');
+    list.replaceChildren();
+    categories.forEach((category, index) => {
+      const li = document.createElement('li');
+      const input = document.createElement('input');
+      input.type = 'text';
+      input.maxLength = 40;
+      input.value = category.label;
+      input.setAttribute('aria-label', 'Section name');
+      input.addEventListener('change', () => {
+        const next = categories.map((c) => (c.id === category.id ? { ...c, label: input.value } : c));
+        saveCategories(next, 'Section renamed.');
+      });
+      const count = items.filter((item) => item.category === category.id).length;
+      const meta = document.createElement('span');
+      meta.className = 'hint';
+      meta.textContent = `${count} gift${count === 1 ? '' : 's'}`;
+
+      const swap = (offset) => {
+        const next = [...categories];
+        [next[index], next[index + offset]] = [next[index + offset], next[index]];
+        saveCategories(next, 'Sections reordered.');
+      };
+      const up = button('↑', 'secondary', () => swap(-1));
+      const down = button('↓', 'secondary', () => swap(1));
+      up.disabled = index === 0;
+      down.disabled = index === categories.length - 1;
+      up.title = 'Move up';
+      down.title = 'Move down';
+      const del = button('Delete', 'danger', () => {
+        const warning = count
+          ? `Delete the “${category.label}” section? Its ${count} gift${count === 1 ? '' : 's'} will stay on your list without a section.`
+          : `Delete the “${category.label}” section?`;
+        if (!confirm(warning)) return;
+        saveCategories(categories.filter((c) => c.id !== category.id), 'Section deleted.');
+      });
+
+      const controls = document.createElement('div');
+      controls.className = 'controls';
+      controls.append(up, down, del);
+      li.append(input, meta, controls);
+      list.append(li);
+    });
+  }
+
+  $('add-category').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const label = $('new-category').value.trim();
+    if (!label) return;
+    $('new-category').value = '';
+    saveCategories([...categories, { label }], `Added “${label}”.`);
+  });
 
   // ---------- Settings ----------
 
   $('settings-form').addEventListener('submit', async (e) => {
     e.preventDefault();
     try {
-      await api('/api/settings', {
+      await api('/api/me/settings', {
         method: 'PUT',
         body: { title: $('site-title').value, intro: $('site-intro').value },
       });
@@ -343,6 +505,104 @@
       setMessage('settings-message', err.message, 'error');
     }
   });
+
+  // ---------- Claims ----------
+
+  $('clear-claims').addEventListener('click', async () => {
+    if (!confirm('Clear every “I’ll get this” mark on your list? People will be able to pick gifts again.')) return;
+    try {
+      await api('/api/me/claims/clear', { method: 'POST' });
+      setMessage('claims-message', 'Cleared. Your list is fresh.');
+    } catch (err) {
+      setMessage('claims-message', err.message, 'error');
+    }
+  });
+
+  // ---------- Account ----------
+
+  $('password-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    try {
+      await api('/api/me/password', {
+        method: 'PUT',
+        body: { current: $('current-password').value, next: $('new-password').value },
+      });
+      $('current-password').value = '';
+      $('new-password').value = '';
+      setMessage('password-message', 'Password changed.');
+    } catch (err) {
+      setMessage('password-message', err.message, 'error');
+    }
+  });
+
+  $('delete-account').addEventListener('click', async () => {
+    const password = prompt(
+      `This permanently deletes your account and everything on ${me.username}'s list, and ${location.host}/${me.username} stops working.\n\nType your password to confirm:`,
+    );
+    if (!password) return;
+    try {
+      await api('/api/me', { method: 'DELETE', body: { password } });
+      location.href = '/';
+    } catch (err) {
+      setMessage('delete-message', err.message, 'error');
+    }
+  });
+
+  // ---------- Site admin ----------
+
+  async function loadAccounts() {
+    const list = $('account-list');
+    try {
+      const accounts = await api('/api/site/accounts');
+      list.replaceChildren();
+      for (const account of accounts) {
+        const li = document.createElement('li');
+        const info = document.createElement('div');
+        info.className = 'info';
+        const link = document.createElement('a');
+        link.href = `/${account.username}`;
+        link.target = '_blank';
+        link.textContent = account.username;
+        const strong = document.createElement('strong');
+        strong.append(link);
+        const meta = document.createElement('span');
+        meta.textContent = [
+          `${account.items} gift${account.items === 1 ? '' : 's'}`,
+          `joined ${new Date(account.createdAt).toLocaleDateString()}`,
+          account.siteAdmin ? 'site admin' : '',
+        ].filter(Boolean).join(' · ');
+        info.append(strong, meta);
+
+        const controls = document.createElement('div');
+        controls.className = 'controls';
+        controls.append(button('Reset password', 'secondary', async () => {
+          if (!confirm(`Give ${account.username} a new temporary password? Their current one stops working.`)) return;
+          try {
+            const { password } = await api(`/api/site/accounts/${account.username}/reset-password`, { method: 'POST' });
+            setMessage('site-message', `New password for ${account.username}: ${password}  (send it to them; it won't be shown again)`);
+          } catch (err) {
+            setMessage('site-message', err.message, 'error');
+          }
+        }));
+        if (account.username !== me.username) {
+          controls.append(button('Delete', 'danger', async () => {
+            if (!confirm(`Permanently delete ${account.username} and their whole list?`)) return;
+            try {
+              await api(`/api/site/accounts/${account.username}`, { method: 'DELETE' });
+              setMessage('site-message', `Deleted ${account.username}.`);
+              loadAccounts();
+            } catch (err) {
+              setMessage('site-message', err.message, 'error');
+            }
+          }));
+        }
+        li.append(info, controls);
+        list.append(li);
+      }
+    } catch (err) {
+      setMessage('site-message', err.message, 'error');
+    }
+  }
 
   // ---------- "Add to gift list" bookmark ----------
 
@@ -391,5 +651,12 @@
 
   // ---------- Start ----------
 
-  api('/api/session').then(({ admin }) => (admin ? showAdmin() : showLogin()));
+  async function start() {
+    const session = await api('/api/session');
+    signupCodeRequired = session.signupCodeRequired;
+    if (session.user) showAdmin(session.user);
+    else if (location.pathname === '/signup') showSignup();
+    else showLogin();
+  }
+  start();
 })();

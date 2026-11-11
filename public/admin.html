@@ -4,33 +4,77 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="robots" content="noindex">
-  <title>Gift List Admin</title>
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🃏</text></svg>">
+  <title>Your Gift List</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎁</text></svg>">
   <link rel="stylesheet" href="/styles.css">
 </head>
 <body>
-  <!-- Login -->
+  <!-- Log in -->
   <div id="login-view" class="wrap hidden">
     <form id="login-form" class="panel login">
-      <h2>Admin login</h2>
+      <h2>Log in</h2>
       <div id="login-message" class="message error"></div>
       <div class="field">
-        <label for="password">Password</label>
-        <input id="password" type="password" autocomplete="current-password" required autofocus>
+        <label for="login-username">Username</label>
+        <input id="login-username" type="text" autocomplete="username" autocapitalize="none" spellcheck="false" required>
+      </div>
+      <div class="field">
+        <label for="login-password">Password</label>
+        <input id="login-password" type="password" autocomplete="current-password" required>
       </div>
       <button class="btn" type="submit">Log in</button>
+      <p class="hint">New here? <a href="/signup" data-view="signup">Create a list</a>. Forgot your password? Ask the site's admin to reset it.</p>
+    </form>
+  </div>
+
+  <!-- Sign up -->
+  <div id="signup-view" class="wrap hidden">
+    <form id="signup-form" class="panel login">
+      <h2>Create your gift list</h2>
+      <div id="signup-message" class="message error"></div>
+      <div class="field">
+        <label for="signup-username">Username</label>
+        <input id="signup-username" type="text" autocomplete="username" autocapitalize="none" spellcheck="false" required minlength="3" maxlength="30">
+        <span class="hint">Your list's address: <strong id="signup-address"></strong></span>
+      </div>
+      <div class="field">
+        <label for="signup-password">Password</label>
+        <input id="signup-password" type="password" autocomplete="new-password" required minlength="8">
+        <span class="hint">At least 8 characters.</span>
+      </div>
+      <div id="signup-code-field" class="field hidden">
+        <label for="signup-code">Sign-up code</label>
+        <input id="signup-code" type="text" autocomplete="off">
+        <span class="hint">Ask whoever sent you here for the code.</span>
+      </div>
+      <button class="btn" type="submit">Create my list</button>
+      <p class="hint">Already have one? <a href="/login" data-view="login">Log in</a>.</p>
     </form>
   </div>
 
   <!-- Admin -->
   <div id="admin-view" class="wrap hidden">
     <div class="admin-bar">
-      <h1>🎁 Gift List Admin</h1>
+      <h1>🎁 <span id="admin-heading">Your gift list</span></h1>
       <div class="actions">
-        <a class="btn secondary" href="/" target="_blank">View shared page ↗</a>
+        <a id="view-list" class="btn secondary" href="/" target="_blank">View shared page ↗</a>
         <button id="logout" class="btn secondary" type="button">Log out</button>
       </div>
     </div>
+
+    <!-- Share -->
+    <section class="panel">
+      <h2>Share your list</h2>
+      <div id="share-message" class="message"></div>
+      <div class="row">
+        <input id="share-url" type="text" readonly aria-label="Your list's address">
+        <button id="copy-share" class="btn" type="button">Copy link</button>
+      </div>
+      <p class="hint" style="margin-bottom:0">
+        Anyone with this link can see your list. When someone is getting a gift, they tap “I'll get this” so others
+        don't buy it too. You won't see who's getting what, so it stays a surprise.
+      </p>
+    </section>
 
     <!-- Add / edit item -->
     <section class="panel">
@@ -98,6 +142,47 @@
       </div>
     </section>
 
+    <!-- Existing items -->
+    <section class="panel">
+      <h2>Your list (<span id="count">0</span>)</h2>
+      <div id="items"></div>
+      <p id="no-items" class="empty hidden">No gifts yet. Add your first one above.</p>
+    </section>
+
+    <!-- Sections -->
+    <section class="panel">
+      <h2>Sections</h2>
+      <p class="hint" style="margin-top:0">
+        Group your gifts under headings on your shared page, like “Books”, “Kitchen” or “Board games”.
+        New gifts are put in the section that best matches their name, and you can always change it.
+        Gifts without a section are shown last, under “Other ideas”.
+      </p>
+      <div id="categories-message" class="message"></div>
+      <ul id="category-list" class="category-list"></ul>
+      <form id="add-category" class="row">
+        <label for="new-category" class="visually-hidden">New section name</label>
+        <input id="new-category" type="text" maxlength="40" placeholder="New section name">
+        <button class="btn secondary" type="submit">Add section</button>
+      </form>
+    </section>
+
+    <!-- Page settings -->
+    <section class="panel">
+      <h2>Page settings</h2>
+      <form id="settings-form">
+        <div id="settings-message" class="message"></div>
+        <div class="field">
+          <label for="site-title">Page title</label>
+          <input id="site-title" type="text" maxlength="120">
+        </div>
+        <div class="field">
+          <label for="site-intro">Intro message</label>
+          <textarea id="site-intro" maxlength="2000"></textarea>
+        </div>
+        <button class="btn" type="submit">Save settings</button>
+      </form>
+    </section>
+
     <!-- Bookmark for stores that block Fetch details -->
     <section class="panel">
       <h2>Add from any store</h2>
@@ -117,28 +202,50 @@
       </ol>
     </section>
 
-    <!-- Existing items -->
+    <!-- Claims -->
     <section class="panel">
-      <h2>Your list (<span id="count">0</span>)</h2>
-      <div id="items"></div>
-      <p id="no-items" class="empty hidden">No gifts yet. Add your first one above.</p>
+      <h2>Gifts people are getting</h2>
+      <p class="hint" style="margin-top:0">
+        To keep things a surprise, you can't see which gifts people have said they'll get. After a birthday or the
+        holidays, you can clear them all so your list starts fresh. (Delete or hide gifts you received first.)
+      </p>
+      <div id="claims-message" class="message"></div>
+      <button id="clear-claims" class="btn danger" type="button">Clear all “I'll get this” marks</button>
     </section>
 
-    <!-- Page settings -->
+    <!-- Account -->
     <section class="panel">
-      <h2>Page settings</h2>
-      <form id="settings-form">
-        <div id="settings-message" class="message"></div>
-        <div class="field">
-          <label for="site-title">Page title</label>
-          <input id="site-title" type="text">
+      <h2>Account</h2>
+      <form id="password-form">
+        <div id="password-message" class="message"></div>
+        <input type="text" autocomplete="username" id="password-username" class="hidden" readonly>
+        <div class="two-col">
+          <div class="field">
+            <label for="current-password">Current password</label>
+            <input id="current-password" type="password" autocomplete="current-password" required>
+          </div>
+          <div class="field">
+            <label for="new-password">New password</label>
+            <input id="new-password" type="password" autocomplete="new-password" required minlength="8">
+          </div>
         </div>
-        <div class="field">
-          <label for="site-intro">Intro message</label>
-          <textarea id="site-intro"></textarea>
-        </div>
-        <button class="btn" type="submit">Save settings</button>
+        <button class="btn secondary" type="submit">Change password</button>
+        <span class="hint">This signs you out everywhere else.</span>
       </form>
+      <hr>
+      <div id="delete-message" class="message"></div>
+      <button id="delete-account" class="btn danger" type="button">Delete my account and list…</button>
+    </section>
+
+    <!-- Site admin (only for usernames in SITE_ADMIN) -->
+    <section id="site-admin" class="panel hidden">
+      <h2>Site admin: all accounts</h2>
+      <p class="hint" style="margin-top:0">
+        Only you see this, because your username is in SITE_ADMIN. “Reset password” gives you a new temporary
+        password to send to that person; they can change it from their Account section.
+      </p>
+      <div id="site-message" class="message"></div>
+      <ul id="account-list" class="item-list"></ul>
     </section>
   </div>
 

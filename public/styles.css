@@ -152,7 +152,8 @@ a.thumb { cursor: pointer; }
 
 form .field { display: flex; flex-direction: column; gap: 4px; margin-bottom: 14px; }
 form label { font-weight: 600; font-size: 0.9rem; }
-form .hint { color: var(--muted); font-size: 0.82rem; }
+.hint { color: var(--muted); font-size: 0.88rem; }
+form .hint { font-size: 0.82rem; }
 input[type="text"], input[type="url"], input[type="password"], textarea, select {
   width: 100%;
   padding: 10px 12px;
@@ -202,3 +203,44 @@ h3.list-section:first-of-type { margin-top: 0; }
 
 .login { max-width: 360px; margin: 10vh auto; }
 .hidden { display: none !important; }
+
+/* ---------- Accounts, sharing and claims ---------- */
+
+.wrap.narrow { max-width: 640px; }
+.visually-hidden {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}
+hr { border: 0; border-top: 1px solid var(--border); margin: 20px 0; }
+a { color: var(--accent); }
+.login .hint { color: var(--muted); font-size: 0.88rem; margin: 16px 0 0; }
+
+.banner {
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  border-radius: 10px;
+  padding: 10px 14px;
+  margin-bottom: 20px;
+  font-size: 0.92rem;
+}
+header.site p.how { margin-top: 12px; font-size: 0.9rem; }
+.site-footer { text-align: center; margin-top: 48px; font-size: 0.88rem; color: var(--muted); }
+.site-footer a { color: var(--muted); }
+
+.claim { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.claim .claim-button { width: 100%; }
+.claim-form { display: flex; flex-direction: column; gap: 6px; width: 100%; }
+.claim-form label { font-size: 0.85rem; font-weight: 600; }
+.claim-form input { padding: 8px 10px; }
+.claimed-note { font-weight: 600; font-size: 0.92rem; }
+.link-button {
+  background: none; border: 0; padding: 0; font: inherit; font-size: 0.88rem;
+  color: var(--accent); text-decoration: underline; cursor: pointer;
+}
+.card.is-claimed .thumb, .card.is-claimed h2, .card.is-claimed .desc, .card.is-claimed .price { opacity: 0.55; }
+
+.category-list { list-style: none; margin: 0 0 14px; padding: 0; }
+.category-list li { display: flex; align-items: center; gap: 10px; padding: 6px 0; flex-wrap: wrap; }
+.category-list li input { flex: 1; min-width: 160px; width: auto; }
+.category-list .hint { color: var(--muted); font-size: 0.82rem; min-width: 4.5em; }
+.category-list .controls { display: flex; gap: 6px; }
+#site-admin .info a { color: inherit; }
