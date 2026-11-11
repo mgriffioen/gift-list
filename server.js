@@ -115,7 +115,7 @@ app.post('/api/login', (req, res) => {
     const { remaining, lockedFor } = loginLimiter.recordFailure(req.ip);
     if (lockedFor) return tooMany(res, lockedFor, 'Too many wrong passwords.');
     const warning = remaining <= 2 ? ` ${remaining} ${remaining === 1 ? 'try' : 'tries'} left before a 15-minute lockout.` : '';
-    return res.status(401).json({ error: `Wrong username or password.${warning}` });
+    return res.status(401).json({ error: `Wrong name or password.${warning}` });
   }
   loginLimiter.recordSuccess(req.ip);
   startSession(req, res, account);
