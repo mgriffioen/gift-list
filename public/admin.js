@@ -206,6 +206,16 @@
 
   FIELDS.forEach((f) => $(f).addEventListener('input', updatePreview));
 
+  // Typed prices become US dollars when you leave the field: "10" → "$10.00".
+  function formatPriceField() {
+    const formatted = window.giftPrice.formatUsd($('price').value);
+    if (formatted !== $('price').value) {
+      $('price').value = formatted;
+      updatePreview();
+    }
+  }
+  $('price').addEventListener('blur', formatPriceField);
+
   // Fill the form with scraped details, only overwriting fields that were found.
   function applyDetails(details) {
     const current = formValues();
@@ -271,6 +281,7 @@
 
   $('item-form').addEventListener('submit', async (e) => {
     e.preventDefault();
+    formatPriceField();
     const values = formValues();
     if (!values.title) return setMessage('item-message', 'Please add a title.', 'error');
     const save = $('save');
