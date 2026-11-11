@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Gift Lists</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎁</text></svg>">
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <div class="wrap narrow">
+    <header class="site">
+      <h1>🎁 Gift Lists</h1>
+      <p>Make a list of gift ideas, share one link with friends and family, and let them quietly mark what they're getting, so nobody buys the same thing twice and you're still surprised.</p>
+    </header>
+
+    <section class="panel">
+      <h2>Looking for someone's list?</h2>
+      <form id="find-form" class="row">
+        <label for="find" class="visually-hidden">Their username</label>
+        <input id="find" type="text" placeholder="Their username, e.g. mark" autocomplete="off" autocapitalize="none" spellcheck="false">
+        <button class="btn" type="submit">Go</button>
+      </form>
+    </section>
+
+    <section class="panel">
+      <h2>Your own list</h2>
+      <div id="signed-out" class="row">
+        <a class="btn" href="/signup">Create a list</a>
+        <a class="btn secondary" href="/login">Log in</a>
+      </div>
+      <div id="signed-in" class="row hidden">
+        <a class="btn" href="/admin">Edit your list</a>
+        <a id="my-list" class="btn secondary" href="/">View your shared page</a>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    document.getElementById('find-form').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const name = document.getElementById('find').value.trim().toLowerCase().replace(/^\/+/, '');
+      if (name) location.href = `/${encodeURIComponent(name)}`;
+    });
+    fetch('/api/session').then((r) => r.json()).then(({ user }) => {
+      if (!user) return;
+      document.getElementById('signed-out').classList.add('hidden');
+      document.getElementById('signed-in').classList.remove('hidden');
+      document.getElementById('my-list').href = `/${user.username}`;
+    }).catch(() => {});
+  </script>
+</body>
+</html>

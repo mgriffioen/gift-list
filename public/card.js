@@ -3,7 +3,7 @@
 (function () {
   function safeUrl(value, { allowRelative = false } = {}) {
     if (!value) return '';
-    if (allowRelative && value.startsWith('/uploads/')) return value;
+    if (allowRelative && /^\/uploads\/[\w-]+(\/[\w-]+)?\.\w+$/.test(value)) return value;
     try {
       const url = new URL(value);
       return url.protocol === 'http:' || url.protocol === 'https:' ? url.href : '';
@@ -19,7 +19,9 @@
     return node;
   }
 
-  window.renderCard = function renderCard(item) {
+  // `extra` (optional) is an element added under the button, such as the
+  // "I'll get this" controls on the shared page.
+  window.renderCard = function renderCard(item, extra) {
     const card = el('article', 'card');
     const href = safeUrl(item.url);
 
@@ -59,6 +61,7 @@
       link.rel = 'noopener noreferrer';
       body.append(link);
     }
+    if (extra) body.append(extra);
     card.append(body);
     return card;
   };

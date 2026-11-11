@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Gift List</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎁</text></svg>">
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <div class="wrap">
+    <div id="owner-banner" class="banner hidden">
+      This is your list as others see it. To keep gifts a surprise, you won't see which ones people have said they'll get.
+      <a href="/admin">Edit your list</a>
+    </div>
+    <header class="site">
+      <h1 id="title">Gift List</h1>
+      <p id="intro"></p>
+      <p id="how-it-works" class="how hidden">
+        Getting one of these? Tap <strong>I'll get this</strong> so nobody else buys the same thing.
+        Other visitors will see it's taken. <span id="owner-name"></span> won't.
+      </p>
+    </header>
+    <div id="page-message" class="message error hidden" role="alert"></div>
+    <main id="sections" aria-live="polite"></main>
+    <p id="empty" class="empty hidden">Nothing here yet — check back soon!</p>
+    <footer class="site-footer"><a href="/">Make your own gift list</a></footer>
+  </div>
+
+  <script src="/card.js"></script>
+  <script src="/list.js"></script>
+</body>
+</html>
